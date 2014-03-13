@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
@@ -10,33 +11,27 @@ namespace VanFosson.EnumerableExtensions.Core
     {
         private static readonly Type _enumerableType = typeof(Enumerable);
 
-        public static IEnumerable CastAsType(this IEnumerable source, Type targetType)
+        public static IEnumerable CastAsType<T>(this IEnumerable<T> source, Type targetType)
         {
             if (source == null)
             {
                 throw new ArgumentNullException("source");
             }
 
-            var castMethod = _enumerableType.GetMethod("Cast").MakeGenericMethod(targetType);
+            var typedArray = Array.CreateInstance(targetType, source.Count());
 
-            return (IEnumerable)castMethod.Invoke(null, new object[] { source });
-        } 
+            var index = 0;
+            foreach (var elem in source)
+            {
+                typedArray.SetValue(elem, index++);
+            }
+            
+            return typedArray;
+        }
 
-        public static IList ToListOfType(this IEnumerable source, Type targetType)
+        public static IList ToListOfType<T>(this IEnumerable<T> source, Type targetType)
         {
-            var enumerable = CastAsType(source, targetType);
-
-            var listMethod = _enumerableType.GetMethod("ToList").MakeGenericMethod(targetType);
-
-            try
-            {
-                return (IList)listMethod.Invoke(null, new object[] { enumerable });
-            }
-            catch (TargetInvocationException e)
-            {
-                ExceptionDispatchInfo.Capture(e.InnerException).Throw();
-                return null; // to satisfy the compiler, never reached
-            }
+            return (IList)CastAsType(source, targetType);
         } 
     }
 }
